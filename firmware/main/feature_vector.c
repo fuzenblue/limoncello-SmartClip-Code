@@ -44,37 +44,42 @@ void feature_vector_build(feature_vector_t *fv,
     fv->flicker_freq_hz = flicker_freq;
     fv->flicker_alert = flicker_is_alert(flicker_index, flicker_freq) ? 1 : 0;
 
-    
-    fv->pressure_hpa       = pf->pressure_hpa;
-    fv->pressure_ddt_1h    = pf->ddt_1h;
-    fv->pressure_ddt_6h    = pf->ddt_6h;
-    fv->pressure_zscore    = pf->zscore;
-    fv->pressure_drop_alert = (uint8_t)pf->drop_alert;
+    /* Pressure features (8) */
+    fv->pressure_hpa          = pf->pressure_hpa;
+    fv->pressure_ddt_1h       = pf->ddt_1h;
+    fv->pressure_ddt_6h       = pf->ddt_6h;
+    fv->pressure_std_6h       = pf->std_6h;
+    fv->pressure_zscore       = pf->zscore;
+    fv->pressure_drop_alert_1h = (uint8_t)pf->drop_alert_1h;
+    fv->pressure_drop_alert_6h = (uint8_t)pf->drop_alert_6h;
+    fv->pressure_trigger       = (uint8_t)pf->trigger;
 
-    
-    fv->voc_raw     = vf->voc_raw;
-    fv->voc_zscore  = vf->zscore;
-    fv->voc_spike   = (uint8_t)vf->spike;
-    fv->humidity_pct = vf->humidity_pct;
-    fv->temp_celsius = vf->temp_celsius;
+    /* VOC features (7) */
+    fv->voc_raw          = vf->voc_raw;
+    fv->voc_zscore       = vf->zscore;
+    fv->voc_ddt_10min    = vf->ddt_10min;
+    fv->voc_spike        = (uint8_t)vf->spike;
+    fv->voc_persistent_spike = (uint8_t)vf->persistent_spike;
+    fv->humidity_pct     = vf->humidity_pct;
+    fv->temp_celsius     = vf->temp_celsius;
 
-    
+    /* Audio features (3) */
     fv->audio_class      = (uint8_t)audio_class;
     fv->audio_confidence = audio_conf;
     fv->audio_db_mean    = audio_db;
 
-    
+    /* User priors (4) */
     fv->prior_photophobia          = pop_photophobia;
     fv->prior_phonophobia          = pop_phonophobia;
     fv->prior_pressure_sensitivity = pop_pressure_sens;
     fv->prior_voc_sensitivity      = pop_voc_sens;
 
-    
+    /* Risk score (1) - captures clinically meaningful 6h trend */
     fv->risk_score =
-        (float)fv->flicker_alert         * pop_photophobia   * 0.25f +
-        (float)fv->pressure_drop_alert   * pop_pressure_sens * 0.30f +
-        (float)fv->voc_spike             * pop_voc_sens      * 0.25f +
-        (audio_class == 2 ? 1.0f : 0.0f) * pop_phonophobia   * 0.20f;
+        (float)fv->flicker_alert            * pop_photophobia   * 0.25f +
+        (float)fv->pressure_drop_alert_6h    * pop_pressure_sens * 0.30f +
+        (float)fv->voc_persistent_spike      * pop_voc_sens      * 0.25f +
+        (audio_class == 2 ? 1.0f : 0.0f)     * pop_phonophobia   * 0.20f;
 }
 
 
@@ -104,31 +109,42 @@ void feature_vector_serialise(const feature_vector_t *fv,
     WRITE_U32(fv->timestamp_unix);
     WRITE_U8(fv->motion_active);
 
+    /* Light (3) */
     WRITE_FLOAT(fv->flicker_index);
     WRITE_FLOAT(fv->flicker_freq_hz);
     WRITE_U8(fv->flicker_alert);
 
+    /* Pressure (8) */
     WRITE_FLOAT(fv->pressure_hpa);
     WRITE_FLOAT(fv->pressure_ddt_1h);
     WRITE_FLOAT(fv->pressure_ddt_6h);
+    WRITE_FLOAT(fv->pressure_std_6h);
     WRITE_FLOAT(fv->pressure_zscore);
-    WRITE_U8(fv->pressure_drop_alert);
+    WRITE_U8(fv->pressure_drop_alert_1h);
+    WRITE_U8(fv->pressure_drop_alert_6h);
+    WRITE_U8(fv->pressure_trigger);
 
+    /* VOC (7) */
     WRITE_FLOAT(fv->voc_raw);
     WRITE_FLOAT(fv->voc_zscore);
+    WRITE_FLOAT(fv->voc_ddt_10min);
     WRITE_U8(fv->voc_spike);
+    WRITE_U8(fv->voc_persistent_spike);
     WRITE_FLOAT(fv->humidity_pct);
     WRITE_FLOAT(fv->temp_celsius);
 
+    /* Audio (3) */
     WRITE_U8(fv->audio_class);
     WRITE_FLOAT(fv->audio_confidence);
     WRITE_FLOAT(fv->audio_db_mean);
 
+    /* Priors (4) */
     WRITE_FLOAT(fv->prior_photophobia);
     WRITE_FLOAT(fv->prior_phonophobia);
     WRITE_FLOAT(fv->prior_pressure_sensitivity);
     WRITE_FLOAT(fv->prior_voc_sensitivity);
 
+    /* Risk (1) */
     WRITE_FLOAT(fv->risk_score);
 
     *len = pos;
@@ -145,11 +161,11 @@ void feature_vector_log(const feature_vector_t *fv)
     ESP_LOGI(TAG, "  Motion: %s", fv->motion_active ? "ACTIVE" : "STATIONARY");
     ESP_LOGI(TAG, "  Light:  FI=%.4f  Freq=%.1fHz  Alert=%d",
              fv->flicker_index, fv->flicker_freq_hz, fv->flicker_alert);
-    ESP_LOGI(TAG, "  Press:  %.1f hPa  ddt1h=%.3f  ddt6h=%.3f  z=%.2f  alert=%d",
+    ESP_LOGI(TAG, "  Press:  %.1f hPa  ddt1h=%.3f  ddt6h=%.3f  alert1=%d  alert6=%d",
              fv->pressure_hpa, fv->pressure_ddt_1h, fv->pressure_ddt_6h,
-             fv->pressure_zscore, fv->pressure_drop_alert);
-    ESP_LOGI(TAG, "  VOC:    %.0f Ω  z=%.2f  spike=%d  H=%.0f%%  T=%.1f°C",
-             fv->voc_raw, fv->voc_zscore, fv->voc_spike,
+             fv->pressure_drop_alert_1h, fv->pressure_drop_alert_6h);
+    ESP_LOGI(TAG, "  VOC:    %.0f Ω  z=%.2f  spike=%d  persist=%d  H=%.0f%%  T=%.1f°C",
+             fv->voc_raw, fv->voc_zscore, fv->voc_spike, fv->voc_persistent_spike,
              fv->humidity_pct, fv->temp_celsius);
     ESP_LOGI(TAG, "  Audio:  class=%d  conf=%.2f  dB=%.1f",
              fv->audio_class, fv->audio_confidence, fv->audio_db_mean);

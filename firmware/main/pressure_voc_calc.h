@@ -16,14 +16,19 @@ typedef struct {
     float pressure_hpa;          
     float ddt_1h;                
     float ddt_6h;                
+    float std_6h;                
     float zscore;                
-    int   drop_alert;            
+    int   drop_alert_1h;         
+    int   drop_alert_6h;         
+    int   trigger;               
 } pressure_features_t;
 
 typedef struct {
     float voc_raw;               
     float zscore;                
+    float ddt_10min;             
     int   spike;                 
+    int   persistent_spike;      
     float humidity_pct;          
     float temp_celsius;          
 } voc_features_t;
