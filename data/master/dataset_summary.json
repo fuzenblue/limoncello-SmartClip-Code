@@ -1,0 +1,16 @@
+{
+  "total_rows": 12960,
+  "total_users": 3,
+  "days_per_user": 30,
+  "attacks_per_month": 4,
+  "positive_rate": 0.0333,
+  "positive_count": 432,
+  "negative_count": 12528,
+  "flicker_alert_rate": 0.0564,
+  "pressure_drop_rate": 0.0,
+  "voc_spike_rate": 0.006,
+  "trigger_audio_rate": 0.0544,
+  "mean_risk_score": 0.0196,
+  "schema_columns": 27,
+  "all_checks_passed": true
+}

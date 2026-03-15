@@ -1,0 +1,16 @@
+{
+  "total_windows": 4320,
+  "voc_raw_mean_ohm": 49563.0,
+  "voc_raw_std_ohm": 4128.0,
+  "voc_raw_min_ohm": 23613.0,
+  "voc_raw_max_ohm": 56334.0,
+  "voc_zscore_mean": 0.0067,
+  "voc_zscore_max": 6.5613,
+  "spike_count": 74,
+  "spike_rate_pct": 1.71,
+  "persistent_spike_count": 28,
+  "persistent_spike_rate_pct": 0.65,
+  "spike_threshold_zscore": 2.0,
+  "baseline_window_days": 7,
+  "sample_interval_min": 10
+}

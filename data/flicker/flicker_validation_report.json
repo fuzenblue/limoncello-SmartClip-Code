@@ -1,0 +1,18 @@
+{
+  "total_samples": 350,
+  "true_positives": 150,
+  "true_negatives": 150,
+  "false_positives": 0,
+  "false_negatives": 50,
+  "sensitivity": 0.75,
+  "specificity": 1.0,
+  "precision": 1.0,
+  "f1_score": 0.8571,
+  "accuracy": 0.8571,
+  "flicker_threshold": 0.08,
+  "band_low_hz": 90,
+  "band_high_hz": 210,
+  "sample_rate_hz": 800,
+  "window_size": 512,
+  "freq_resolution_hz": 1.5625
+}

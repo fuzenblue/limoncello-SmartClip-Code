@@ -1,0 +1,26 @@
+{
+  "quantisation_type": "post_training_int8",
+  "original_format": "float32",
+  "target_format": "int8",
+  "original_size_bytes": 107396,
+  "quantised_size_bytes": 27207,
+  "compression_ratio": 3.95,
+  "size_kb": 26.6,
+  "fits_psram_budget": true,
+  "budget_kb": 150,
+  "calibration_samples": 100,
+  "comparison": {
+    "float32_f1": 0.0897,
+    "int8_f1": 0.0897,
+    "f1_drop": 0.0,
+    "float32_accuracy": 0.5132,
+    "int8_accuracy": 0.5132,
+    "accuracy_drop": 0.0,
+    "float32_recall": 0.8611,
+    "int8_recall": 0.8611,
+    "prediction_mae": 0.008004,
+    "within_tolerance": true
+  },
+  "c_header_path": "D:\\limoncello-SmartClip\\pipeline\\..\\firmware\\include\\model_data.h",
+  "ms_model_path": "D:\\limoncello-SmartClip\\pipeline\\..\\models\\gru_smartclip_int8.ms"
+}

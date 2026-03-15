@@ -1,0 +1,15 @@
+{
+  "prior_photophobia": 0.78,
+  "prior_phonophobia": 0.73,
+  "prior_pressure_sensitivity": 0.3125,
+  "prior_voc_sensitivity": 0.4325,
+  "attack_freq_mean_per_month": 3.9875,
+  "pain_intensity_mean": 6.467532,
+  "pain_intensity_std": 1.750247,
+  "prior_photophobia_logit_bias": 1.265666,
+  "prior_phonophobia_logit_bias": 0.994623,
+  "prior_pressure_sensitivity_logit_bias": -0.788457,
+  "prior_voc_sensitivity_logit_bias": -0.271658,
+  "combined_weighted_prior": 0.542875,
+  "combined_logit_bias": 0.171922
+}

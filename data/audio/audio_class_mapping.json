@@ -1,0 +1,24 @@
+{
+  "smartclip_classes": {
+    "0": "Quiet",
+    "1": "Traffic",
+    "2": "Trigger"
+  },
+  "urbansound8k_mapping": {
+    "siren": "Trigger",
+    "jackhammer": "Trigger",
+    "gun_shot": "Trigger",
+    "car_horn": "Traffic",
+    "engine_idling": "Traffic",
+    "drilling": "Traffic",
+    "air_conditioner": "Quiet",
+    "children_playing": "Quiet",
+    "dog_bark": "Quiet",
+    "street_music": "Quiet"
+  },
+  "mapping_rationale": {
+    "class_0_quiet": "Ambient sounds with low phonophobia relevance",
+    "class_1_traffic": "Urban environmental sounds, moderate intensity",
+    "class_2_trigger": "Sudden loud sounds that aggravate migraine phonophobia"
+  }
+}

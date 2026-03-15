@@ -1,0 +1,22 @@
+{
+  "total_windows": 8640,
+  "valid_windows": 8604,
+  "warmup_skipped": 36,
+  "pressure_mean_hpa": 1010.18,
+  "pressure_std_hpa": 4.15,
+  "pressure_min_hpa": 998.12,
+  "pressure_max_hpa": 1021.99,
+  "ddt_1h_mean": -0.0019,
+  "ddt_1h_min": -5.7703,
+  "ddt_6h_mean": -0.0028,
+  "ddt_6h_min": -1.6905,
+  "alert_1h_count": 1241,
+  "alert_1h_rate_pct": 14.36,
+  "alert_6h_count": 595,
+  "alert_6h_rate_pct": 6.89,
+  "trigger_count": 395,
+  "trigger_rate_pct": 4.57,
+  "rapid_drop_threshold_hpa_hr": -1.5,
+  "sustained_drop_threshold_hpa_hr": -0.5,
+  "sample_interval_min": 10
+}
