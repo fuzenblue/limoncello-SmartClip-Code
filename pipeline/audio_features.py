@@ -130,16 +130,24 @@ def extract_mfcc_from_file(file_path: str) -> np.ndarray:
 
 
 def load_urbansound8k() -> pd.DataFrame:
-    metadata_path = os.path.join(US8K_DIR, "metadata", "UrbanSound8K.csv")
-
-    if not os.path.exists(metadata_path):
-        return None
+    # Look for the dataset folder and a CSV file with the SAME name next to it
+    # This matches the user's "folder + csv same name" requirement
+    dataset_csv = US8K_DIR + ".csv"
+    
+    if os.path.isdir(US8K_DIR) and os.path.isfile(dataset_csv):
+        metadata_path = dataset_csv
+        print(f"Detected UrbanSound8K: Folder and CSV '{os.path.basename(dataset_csv)}' both present.")
+    else:
+        # Fallback to standard structured folder search
+        metadata_path = os.path.join(US8K_DIR, "metadata", "UrbanSound8K.csv")
+        if not os.path.exists(metadata_path):
+            return None
 
     if not LIBROSA_AVAILABLE:
         print("librosa not available — cannot process raw audio")
         return None
 
-    print(f"Loading UrbanSound8K dataset: {US8K_DIR}")
+    print(f"Loading metadata from: {metadata_path}")
     metadata = pd.read_csv(metadata_path)
 
     records = []

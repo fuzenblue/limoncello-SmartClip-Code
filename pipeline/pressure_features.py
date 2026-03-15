@@ -66,7 +66,7 @@ RAW_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "..", "data", "raw")
 OUTPUT_DIR   = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "..", "data", "pressure")
-JENA_FILE    = os.path.join(RAW_DATA_DIR, "jena_climate.csv")
+JENA_FILE    = os.path.join(RAW_DATA_DIR, "max_planck_weather_ts.csv")
 OUTPUT_CSV   = os.path.join(OUTPUT_DIR, "pressure_features.csv")
 OUTPUT_STATS = os.path.join(OUTPUT_DIR, "pressure_stats.json")
 
@@ -76,17 +76,37 @@ OUTPUT_STATS = os.path.join(OUTPUT_DIR, "pressure_stats.json")
 # ══════════════════════════════════════════════════════════════════════════════
 
 def load_jena_climate() -> pd.DataFrame:
+    # Resolve input path
+    candidates = [
+        JENA_FILE,
+        os.path.join(RAW_DATA_DIR, "max_planck_weather_ts.csv"),
+        os.path.join(RAW_DATA_DIR, "jena_climate", "jena_climate.csv")
+    ]
     
-    if not os.path.exists(JENA_FILE):
+    # User requirement: Check for folder + csv same name
+    for folder in os.listdir(RAW_DATA_DIR):
+        folder_path = os.path.join(RAW_DATA_DIR, folder)
+        if os.path.isdir(folder_path):
+            csv_path = os.path.join(folder_path, folder + ".csv")
+            if os.path.isfile(csv_path):
+                candidates.insert(0, csv_path)
+
+    final_path = None
+    for path in candidates:
+        if path and os.path.exists(path):
+            final_path = path
+            break
+
+    if not final_path:
         return None
 
     try:
-        print(f"📂 Loading Jena Climate dataset: {JENA_FILE}")
-        df = pd.read_csv(JENA_FILE)
+        print(f"📂 Loading climate dataset: {final_path}")
+        df = pd.read_csv(final_path)
 
-        # Identify pressure column — try several common names
+        # Identify pressure column
         pressure_col = None
-        for candidate in ["p (mbar)", "p_mbar", "pressure", "Press"]:
+        for candidate in ["p (mbar)", "p_mbar", "pressure", "Press", "wv (m/s)"]:
             if candidate in df.columns:
                 pressure_col = candidate
                 break
@@ -105,7 +125,10 @@ def load_jena_climate() -> pd.DataFrame:
         # Build clean dataframe
         result = pd.DataFrame()
         if time_col:
-            result["timestamp"] = pd.to_datetime(df[time_col])
+            result["timestamp"] = pd.to_datetime(df[time_col], format="%d.%m.%Y %H:%M:%S", errors="coerce")
+            # Fallback if format doesn't match
+            if result["timestamp"].isna().all():
+                result["timestamp"] = pd.to_datetime(df[time_col], errors="coerce")
         else:
             # Generate synthetic timestamps at 10-min intervals
             result["timestamp"] = pd.date_range(

@@ -6,11 +6,11 @@
   "positive_rate": 0.0333,
   "positive_count": 432,
   "negative_count": 12528,
-  "flicker_alert_rate": 0.0564,
-  "pressure_drop_rate": 0.0,
-  "voc_spike_rate": 0.006,
-  "trigger_audio_rate": 0.0544,
-  "mean_risk_score": 0.0196,
-  "schema_columns": 27,
+  "flicker_alert_rate": 0.0725,
+  "pressure_drop_rate": 0.0193,
+  "voc_spike_rate": 0.0056,
+  "trigger_audio_rate": 0.063,
+  "mean_risk_score": 0.0311,
+  "schema_columns": 32,
   "all_checks_passed": true
 }

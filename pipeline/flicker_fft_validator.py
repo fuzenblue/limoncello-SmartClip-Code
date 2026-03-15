@@ -70,9 +70,12 @@ def mains_led_signal(freq_hz: float,
     n_samples = int(duration_s * sample_rate)
     t = np.linspace(0, duration_s, n_samples, endpoint=False)
 
-    # Full-wave rectified sine: |sin(2πft)| is always positive, oscillates at freq_hz
-    # The 0.5 + 0.5× scaling puts the signal in range [0.5, 1.0]
-    signal = 0.5 + 0.5 * np.abs(np.sin(2 * np.pi * freq_hz * t))
+    # Full-wave rectified sine: |sin(πft)| is always positive, oscillations at freq_hz
+    # US/Thai mains flicker is 2x mains freq (100/120Hz).
+    # Using pi * freq_hz instead of 2 * pi * freq_hz ensures the rectified 
+    # signal has the REQUESTED freq_hz as its fundamental.
+    # We use a power of 1.5 to make peaks sharper (like real LED/CFL flicker).
+    signal = 0.3 + 0.7 * np.abs(np.sin(np.pi * freq_hz * t))**1.5
 
     # Add Gaussian noise to simulate ADC measurement noise
     noise = np.random.normal(0, NOISE_STD, n_samples)

@@ -1,8 +1,3 @@
-
-
-# ──────────────────────────────────────────────────────────────────────────────
-# IMPORTS
-# ──────────────────────────────────────────────────────────────────────────────
 import os
 import json
 import numpy as np
@@ -67,7 +62,7 @@ RAW_DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "..", "data", "raw")
 OUTPUT_DIR   = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             "..", "data", "voc")
-UCI_FILE     = os.path.join(RAW_DATA_DIR, "AirQualityUCI.csv")
+UCI_FILE      = os.path.join(RAW_DATA_DIR, "AirQuality.csv")
 OUTPUT_CSV   = os.path.join(OUTPUT_DIR, "voc_features.csv")
 OUTPUT_STATS = os.path.join(OUTPUT_DIR, "voc_stats.json")
 
@@ -77,16 +72,36 @@ OUTPUT_STATS = os.path.join(OUTPUT_DIR, "voc_stats.json")
 # ══════════════════════════════════════════════════════════════════════════════
 
 def load_uci_air_quality() -> pd.DataFrame:
+    # Resolve input path
+    candidates = [
+        UCI_FILE,
+        os.path.join(RAW_DATA_DIR, "AirQuality.csv"),
+        os.path.join(RAW_DATA_DIR, "AirQualityUCI", "AirQualityUCI.csv")
+    ]
     
-    if not os.path.exists(UCI_FILE):
+    # User requirement: Check for folder + csv same name
+    for folder in os.listdir(RAW_DATA_DIR):
+        folder_path = os.path.join(RAW_DATA_DIR, folder)
+        if os.path.isdir(folder_path):
+            csv_path = os.path.join(folder_path, folder + ".csv")
+            if os.path.isfile(csv_path):
+                candidates.insert(0, csv_path)
+
+    final_path = None
+    for path in candidates:
+        if path and os.path.exists(path):
+            final_path = path
+            break
+
+    if not final_path:
         return None
 
     try:
-        print(f"📂 Loading UCI Air Quality dataset: {UCI_FILE}")
+        print(f"📂 Loading Air Quality dataset: {final_path}")
 
         # The UCI Air Quality dataset uses semicolons as separators
         # and commas as decimal points (European format)
-        df = pd.read_csv(UCI_FILE, sep=";", decimal=",",
+        df = pd.read_csv(final_path, sep=";", decimal=",",
                          na_values=[-200, -200.0])
 
         # Find VOC-related column
@@ -102,8 +117,11 @@ def load_uci_air_quality() -> pd.DataFrame:
 
         # Create timestamp from Date + Time columns
         if "Date" in df.columns and "Time" in df.columns:
+            # European format fix: Time might be '18.00.00', need '18:00:00'
+            date_part = df["Date"].astype(str)
+            time_part = df["Time"].astype(str).str.replace(".", ":", regex=False)
             df["timestamp"] = pd.to_datetime(
-                df["Date"].astype(str) + " " + df["Time"].astype(str),
+                date_part + " " + time_part,
                 format="mixed", dayfirst=True, errors="coerce"
             )
         else:
@@ -311,9 +329,9 @@ def compute_summary_stats(df: pd.DataFrame) -> dict:
         "voc_zscore_mean":        round(float(df["voc_zscore"].mean()), 4),
         "voc_zscore_max":         round(float(df["voc_zscore"].max()), 4),
         "spike_count":            n_spike,
-        "spike_rate_pct":         round(100 * n_spike / n_total, 2),
+        "spike_rate_pct":         round(100 * n_spike / n_total, 2) if n_total > 0 else 0.0,
         "persistent_spike_count": n_persistent,
-        "persistent_spike_rate_pct": round(100 * n_persistent / n_total, 2),
+        "persistent_spike_rate_pct": round(100 * n_persistent / n_total, 2) if n_total > 0 else 0.0,
         "spike_threshold_zscore": SPIKE_ZSCORE_THRESHOLD,
         "baseline_window_days":   7,
         "sample_interval_min":    SAMPLE_INTERVAL_MIN,

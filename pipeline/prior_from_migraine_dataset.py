@@ -36,7 +36,7 @@ FALLBACK_PAIN_STD    = 1.8      # Standard deviation of pain intensity
 # Path configuration — relative to this script's directory
 RAW_DATA_DIR   = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "raw")
 OUTPUT_DIR     = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
-INPUT_FILE     = os.path.join(RAW_DATA_DIR, "migraine.csv")
+INPUT_FILE     = os.path.join(RAW_DATA_DIR, "migraine_data.csv")
 OUTPUT_FILE    = os.path.join(OUTPUT_DIR, "population_priors.json")
 
 
@@ -219,21 +219,37 @@ def extract_priors() -> dict:
     print("=" * 60)
 
     # ── Step 1: Load Dataset ──────────────────────────────────────────────
-    # Try to load the real Kaggle migraine dataset first.
-    # If the file is missing or unreadable, fall back to synthetic data.
+    # Resolve input path: Check for 'folder + csv same name' or direct file
+    candidates = [
+        os.path.join(RAW_DATA_DIR, "migraine", "migraine.csv"),
+        os.path.join(RAW_DATA_DIR, "migraine_data.csv"),
+        os.path.join(RAW_DATA_DIR, "migraine.csv")
+    ]
+    
+    # User requirement: Check for folder + csv same name (e.g., migraine/migraine.csv)
+    for folder in os.listdir(RAW_DATA_DIR):
+        folder_path = os.path.join(RAW_DATA_DIR, folder)
+        if os.path.isdir(folder_path):
+            csv_path = os.path.join(folder_path, folder + ".csv")
+            if os.path.isfile(csv_path):
+                candidates.insert(0, csv_path)
+
+    final_input_path = None
+    for path in candidates:
+        if os.path.exists(path):
+            final_input_path = path
+            break
+
     try:
-        if os.path.exists(INPUT_FILE):
-            print(f"\n📂 Loading real dataset: {INPUT_FILE}")
-            df = pd.read_csv(INPUT_FILE)
+        if final_input_path:
+            print(f"\n📂 Loading dataset: {final_input_path}")
+            df = pd.read_csv(final_input_path)
             print(f"   Loaded {len(df)} records with {len(df.columns)} columns.")
-            print(f"   Columns: {list(df.columns)}")
         else:
             # File doesn't exist — generate synthetic fallback
             df = generate_synthetic_migraine_data()
     except Exception as e:
-        # File exists but can't be read (encoding issue, corruption, etc.)
         print(f"\n❌ Error reading dataset: {e}")
-        print("   Falling back to synthetic data generation.")
         df = generate_synthetic_migraine_data()
 
     # ── Step 2: Normalise Column Names ────────────────────────────────────

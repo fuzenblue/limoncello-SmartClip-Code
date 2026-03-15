@@ -1,74 +1,74 @@
 {
   "model_type": "GRU",
-  "framework": "NumPy",
+  "framework": "PyTorch",
   "seq_length": 12,
-  "n_features": 22,
+  "n_features": 27,
   "gru_hidden1": 64,
   "gru_hidden2": 32,
-  "epochs_trained": 1,
+  "epochs_trained": 31,
   "learning_rate": 0.001,
   "batch_size": 32,
-  "pos_weight": 28.8,
+  "pos_weight": 28.38,
   "train_samples": 10341,
   "val_samples": 1292,
   "test_samples": 1294,
-  "final_train_loss": 0.0,
-  "best_val_loss": 0.0,
+  "final_train_loss": 0.008776,
+  "best_val_loss": 0.056595,
   "evaluation": {
     "threshold_0.3": {
       "threshold": 0.3,
-      "accuracy": 0.3076,
-      "precision": 0.0243,
-      "recall": 0.6286,
-      "f1_score": 0.0468,
-      "auc_roc": 0.4691,
+      "accuracy": 0.9938,
+      "precision": 0.8387,
+      "recall": 0.8966,
+      "f1_score": 0.8667,
+      "auc_roc": 0.9454,
       "confusion_matrix": [
         [
-          376,
-          883
+          1260,
+          5
         ],
         [
-          13,
-          22
+          3,
+          26
         ]
       ]
     },
     "threshold_0.5": {
       "threshold": 0.5,
-      "accuracy": 0.5008,
-      "precision": 0.0278,
-      "recall": 0.5143,
-      "f1_score": 0.0528,
-      "auc_roc": 0.4691,
+      "accuracy": 0.9938,
+      "precision": 0.8387,
+      "recall": 0.8966,
+      "f1_score": 0.8667,
+      "auc_roc": 0.9454,
       "confusion_matrix": [
         [
-          630,
-          629
+          1260,
+          5
         ],
         [
-          17,
-          18
+          3,
+          26
         ]
       ]
     },
     "threshold_0.7": {
       "threshold": 0.7,
-      "accuracy": 0.6893,
-      "precision": 0.0283,
-      "recall": 0.3143,
-      "f1_score": 0.0519,
-      "auc_roc": 0.4691,
+      "accuracy": 0.9938,
+      "precision": 0.8387,
+      "recall": 0.8966,
+      "f1_score": 0.8667,
+      "auc_roc": 0.9454,
       "confusion_matrix": [
         [
-          881,
-          378
+          1260,
+          5
         ],
         [
-          24,
-          11
+          3,
+          26
         ]
       ]
     }
   },
-  "training_time_sec": 2.2
+  "training_time_sec": 329.1
 }

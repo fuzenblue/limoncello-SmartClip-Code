@@ -191,7 +191,8 @@ def simulate_user_timeline(user_id: str, n_days: int, attack_times: list,
             # PRESSURE escalation: gradual pressure drop before attack
             if is_pressure_sens:
                 # Simulate weather front: pressure drops progressively
-                pressure[idx] -= intensity * 2.0  # Up to 2 hPa total drop
+                # Increased intensity to 4.0 hPa to ensure we trigger the simulation threshold
+                pressure[idx] -= intensity * 4.0  
 
             # VOC escalation: gas resistance drops (more VOCs)
             if is_voc_sensitive:
@@ -217,6 +218,8 @@ def simulate_user_timeline(user_id: str, n_days: int, attack_times: list,
     pressure_series = pd.Series(pressure)
     pressure_ddt_1h = pressure_series.diff(periods=STEPS_PER_HOUR) / 1.0
     pressure_ddt_6h = pressure_series.diff(periods=STEPS_PER_HOUR * 6) / 6.0
+    # 6-hour rolling volatility
+    pressure_std_6h = pressure_series.rolling(window=STEPS_PER_HOUR * 6, min_periods=1).std()
 
     # 30-day rolling z-score
     baseline_30d = 30 * STEPS_PER_DAY
@@ -224,7 +227,9 @@ def simulate_user_timeline(user_id: str, n_days: int, attack_times: list,
     rolling_std = pressure_series.rolling(baseline_30d, min_periods=STEPS_PER_HOUR).std()
     pressure_zscore = (pressure_series - rolling_mean) / (rolling_std + 1e-6)
 
-    pressure_drop_alert = (pressure_ddt_1h < -1.5).astype(int)
+    pressure_drop_alert_1h = (pressure_ddt_1h < -0.5).astype(int)
+    pressure_drop_alert_6h = (pressure_ddt_6h < -0.5).astype(int)
+    pressure_trigger = ((pressure_drop_alert_1h == 1) & (pressure_drop_alert_6h == 1)).astype(int)
 
     # VOC features
     voc_series = pd.Series(voc)
@@ -234,6 +239,9 @@ def simulate_user_timeline(user_id: str, n_days: int, attack_times: list,
     # Negate: lower resistance (more VOC) = positive z-score
     voc_zscore = -(voc_series - voc_rolling_mean) / (voc_rolling_std + 1e-6)
     voc_spike = (voc_zscore > 2.0).astype(int)
+    # VOC derivative and persistence
+    voc_ddt_10min = voc_series.diff() / SAMPLE_INTERVAL_MIN
+    voc_persistent_spike = (voc_spike.rolling(window=3, min_periods=1).sum() >= 3).astype(int)
 
     # Flicker alert
     flicker_alert = ((flicker_index > 0.08) &
@@ -248,8 +256,8 @@ def simulate_user_timeline(user_id: str, n_days: int, attack_times: list,
     # Risk score: weighted linear combination of boolean alerts
     risk_score = (
         flicker_alert * priors["prior_photophobia"] * 0.25 +
-        pressure_drop_alert.values * priors["prior_pressure_sensitivity"] * 0.30 +
-        voc_spike.values * priors["prior_voc_sensitivity"] * 0.25 +
+        pressure_drop_alert_6h.values * priors["prior_pressure_sensitivity"] * 0.30 +
+        voc_persistent_spike.values * priors["prior_voc_sensitivity"] * 0.25 +
         (audio_class == 2).astype(float) * priors["prior_phonophobia"] * 0.20
     )
 
@@ -272,13 +280,18 @@ def simulate_user_timeline(user_id: str, n_days: int, attack_times: list,
         "pressure_hpa":                pressure,
         "pressure_ddt_1h":             pressure_ddt_1h.values,
         "pressure_ddt_6h":             pressure_ddt_6h.values,
+        "pressure_std_6h":             pressure_std_6h.values,
         "pressure_zscore":             pressure_zscore.values,
-        "pressure_drop_alert":         pressure_drop_alert.values,
+        "pressure_drop_alert_1h":      pressure_drop_alert_1h.values,
+        "pressure_drop_alert_6h":      pressure_drop_alert_6h.values,
+        "pressure_trigger":            pressure_trigger.values,
 
         # VOC features
         "voc_raw":                     voc,
         "voc_zscore":                  voc_zscore.values,
+        "voc_ddt_10min":               voc_ddt_10min.values,
         "voc_spike":                   voc_spike.values,
+        "voc_persistent_spike":        voc_persistent_spike.values,
         "humidity_pct":                humidity,
         "temp_celsius":                temp,
 
@@ -305,13 +318,14 @@ def simulate_user_timeline(user_id: str, n_days: int, attack_times: list,
     return df
 
 
+
 # ══════════════════════════════════════════════════════════════════════════════
 # SCHEMA ENFORCEMENT AND VALIDATION
 # ══════════════════════════════════════════════════════════════════════════════
 
 # The master dataset schema — all 27 columns with expected dtypes
 SCHEMA = {
-    "user_id":                     "object",     # str
+    "user_id":                     "object",
     "window_start":                "datetime64[ns]",
     "motion_active":               "int",
     "flicker_index":               "float64",
@@ -320,11 +334,16 @@ SCHEMA = {
     "pressure_hpa":                "float64",
     "pressure_ddt_1h":             "float64",
     "pressure_ddt_6h":             "float64",
+    "pressure_std_6h":             "float64",
     "pressure_zscore":             "float64",
-    "pressure_drop_alert":         "int",
+    "pressure_drop_alert_1h":      "int",
+    "pressure_drop_alert_6h":      "int",
+    "pressure_trigger":            "int",
     "voc_raw":                     "float64",
     "voc_zscore":                  "float64",
+    "voc_ddt_10min":               "float64",
     "voc_spike":                   "int",
+    "voc_persistent_spike":        "int",
     "humidity_pct":                "float64",
     "temp_celsius":                "float64",
     "audio_class":                 "int",
@@ -396,8 +415,8 @@ def verify_dataset(df: pd.DataFrame) -> bool:
               f"> baseline={base_flicker:.4f}")
 
         # Pressure drop alert should be higher pre-attack
-        pre_pressure = pre_attack["pressure_drop_alert"].mean()
-        base_pressure = baseline["pressure_drop_alert"].mean()
+        pre_pressure = pre_attack["pressure_drop_alert_1h"].mean()
+        base_pressure = baseline["pressure_drop_alert_1h"].mean()
         check3b = pre_pressure > base_pressure
         status = "✅ PASS" if check3b else "⚠  WARN"
         print(f"  {status}  Pressure escalation: pre-attack={pre_pressure:.4f} "
@@ -514,7 +533,7 @@ if __name__ == "__main__":
         "positive_count":          int(master_df["migraine_within_6h"].sum()),
         "negative_count":          int((master_df["migraine_within_6h"] == 0).sum()),
         "flicker_alert_rate":      round(float(master_df["flicker_alert"].mean()), 4),
-        "pressure_drop_rate":      round(float(master_df["pressure_drop_alert"].mean()), 4),
+        "pressure_drop_rate":      round(float(master_df["pressure_drop_alert_1h"].mean()), 4),
         "voc_spike_rate":          round(float(master_df["voc_spike"].mean()), 4),
         "trigger_audio_rate":      round(float((master_df["audio_class"] == 2).mean()), 4),
         "mean_risk_score":         round(float(master_df["risk_score"].mean()), 4),

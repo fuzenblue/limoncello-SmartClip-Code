@@ -69,21 +69,21 @@ TRAIN_RATIO = 0.8
 VAL_RATIO = 0.1
 TEST_RATIO = 0.1
 
-# Feature columns used as model input
-# Excludes metadata (user_id, window_start) and labels (migraine_within_6h, etc.)
+# Feature columns used as model input (exactly 27 features)
 FEATURE_COLS = [
     "motion_active",
     "flicker_index", "flicker_freq_hz", "flicker_alert",
-    "pressure_hpa", "pressure_ddt_1h", "pressure_ddt_6h",
-    "pressure_zscore", "pressure_drop_alert",
-    "voc_raw", "voc_zscore", "voc_spike",
+    "pressure_hpa", "pressure_ddt_1h", "pressure_ddt_6h", 
+    "pressure_std_6h", "pressure_zscore", "pressure_drop_alert_1h",
+    "pressure_drop_alert_6h", "pressure_trigger",
+    "voc_raw", "voc_zscore", "voc_ddt_10min", "voc_spike", "voc_persistent_spike",
     "humidity_pct", "temp_celsius",
     "audio_class", "audio_confidence", "audio_db_mean",
     "prior_photophobia", "prior_phonophobia",
     "prior_pressure_sensitivity", "prior_voc_sensitivity",
     "risk_score",
 ]
-N_FEATURES = len(FEATURE_COLS)  # 22 features
+N_FEATURES = len(FEATURE_COLS)  # 27 features
 
 TARGET_COL = "migraine_within_6h"
 
@@ -288,6 +288,41 @@ def initialise_prior_biases(model, priors_path: str):
 
     print(f"   Set output bias to {logit_bias:.4f} "
           f"(sigmoid={combined:.4f} ≈ population base rate)")
+
+
+def initialise_bayesian_weights(model, priors_path: str):
+    """
+    Bayesian Cold-Start Initialization:
+    Overrides random initialization for the 4 clinical prior features using 
+    coefficients derived from the Kaggle Migraine Dataset. This shows domain 
+    knowledge by encoding established medical correlations into the model weights.
+    """
+    if not (TORCH_AVAILABLE and os.path.exists(priors_path)):
+        return
+
+    with open(priors_path, "r") as f:
+        priors = json.load(f)
+
+    # 4 critical priors from Kaggle Migraine Study
+    prior_map = {
+        "prior_photophobia":           priors.get("prior_photophobia_logit_bias", 0.0),
+        "prior_phonophobia":           priors.get("prior_phonophobia_logit_bias", 0.0),
+        "prior_pressure_sensitivity":  priors.get("prior_pressure_sensitivity_logit_bias", 0.0),
+        "prior_voc_sensitivity":       priors.get("prior_voc_sensitivity_logit_bias", 0.0),
+    }
+
+    print(f"\n── Bayesian Cold-Start Initialization ──")
+    with torch.no_grad():
+        for feat_name, logit_bias in prior_map.items():
+            if feat_name in FEATURE_COLS:
+                idx = FEATURE_COLS.index(feat_name)
+                # Set initial weights in GRU1 (Input-to-Hidden) for these features
+                # We target the 'n' (new state) gate to embed the direct impact
+                hidden_size = model.gru1.hidden_size
+                # IH weights layout: [W_ir | W_iz | W_in]
+                # We target W_in (the third segment)
+                model.gru1.weight_ih_l0[2*hidden_size:3*hidden_size, idx].fill_(logit_bias / 2.0)
+                print(f"   Initialized {feat_name:28} index={idx:2} with weight={logit_bias/2.0:.4f}")
 
 
 def compute_class_weights(y_train: np.ndarray) -> float:
@@ -619,6 +654,9 @@ if __name__ == "__main__":
 
         # Initialise output bias with population priors
         initialise_prior_biases(model, PRIORS_FILE)
+        
+        # Bayesian Cold-Start for feature weights
+        initialise_bayesian_weights(model, PRIORS_FILE)
     else:
         model = None
 

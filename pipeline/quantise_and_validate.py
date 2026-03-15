@@ -55,9 +55,10 @@ REPORT_FILE  = os.path.join(MODEL_DIR, "quantisation_report.json")
 FEATURE_COLS = [
     "motion_active",
     "flicker_index", "flicker_freq_hz", "flicker_alert",
-    "pressure_hpa", "pressure_ddt_1h", "pressure_ddt_6h",
-    "pressure_zscore", "pressure_drop_alert",
-    "voc_raw", "voc_zscore", "voc_spike",
+    "pressure_hpa", "pressure_ddt_1h", "pressure_ddt_6h", 
+    "pressure_std_6h", "pressure_zscore", "pressure_drop_alert_1h",
+    "pressure_drop_alert_6h", "pressure_trigger",
+    "voc_raw", "voc_zscore", "voc_ddt_10min", "voc_spike", "voc_persistent_spike",
     "humidity_pct", "temp_celsius",
     "audio_class", "audio_confidence", "audio_db_mean",
     "prior_photophobia", "prior_phonophobia",
