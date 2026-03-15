@@ -21,6 +21,6 @@
     "prediction_mae": 0.008005,
     "within_tolerance": true
   },
-  "c_header_path": "d:\\limoncello-SmartClip-Code\\pipeline\\..\\firmware\\include\\model_data.h",
-  "ms_model_path": "d:\\limoncello-SmartClip-Code\\pipeline\\..\\models\\gru_smartclip_int8.ms"
+  "c_header_path": "D:\\limoncello-SmartClip-Code\\pipeline\\..\\firmware\\include\\model_data.h",
+  "ms_model_path": "D:\\limoncello-SmartClip-Code\\pipeline\\..\\models\\gru_smartclip_int8.ms"
 }
